@@ -39,6 +39,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INSPIRA 2025 Oil Lamps Collection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
             margin: 0;
@@ -374,6 +375,41 @@ try {
     </style>
 </head>
 <body>
+    <header class="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[96%] max-w-7xl rounded-2xl z-50 bg-[#541C1C]/60 backdrop-blur-lg">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="index.php" class="flex items-center gap-3">
+                <img src="assets/img/logo2.webp" class="h-12 w-12 rounded-full object-cover border-2 border-orange-400 p-1">
+                <span class="font-bold text-xl hidden sm:block text-white">INSPIRA '25</span>
+            </a>
+
+            <button id="nav-toggle" class="sm:hidden text-white focus:outline-none">
+                <svg id="hamburger" class="h-8 w-8 block" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <svg id="close" class="h-8 w-8 hidden" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <nav id="nav-menu" class="hidden sm:flex space-x-8 items-center">
+                <a href="../../index.php" class="nav-link font-semibold text-orange-400 hover:text-white transition">Home</a>
+                <a href="../../about.php" class="nav-link font-semibold text-white hover:text-orange-400 transition">About</a>
+                <a href="../../update.php" class="nav-link font-semibold text-white hover:text-orange-400 transition">Get Ticket</a>
+                <a href="../../agenda.php" class="nav-link font-semibold text-white hover:text-orange-400 transition">Agenda</a>
+                <a href="../../update.php" class="nav-link font-semibold text-white hover:text-orange-400 transition">Claim DP</a>
+            </nav>
+        </div>
+
+        <nav id="nav-menu-mobile" class="sm:hidden hidden bg-[#541C1C]/60 backdrop-blur-lg px-6 pb-4 space-y-2 rounded-b-2xl">
+            <a href="../../index.php" class="block py-2 font-semibold text-orange-400 hover:text-white transition">Home</a>
+            <a href="../../about.php" class="block py-2 font-semibold text-white hover:text-orange-400 transition">About</a>
+            <a href="../../update.php" class="block py-2 font-semibold text-white hover:text-orange-400 transition">Get Ticket</a>
+            <a href="../../agenda.php" class="block py-2 font-semibold text-white hover:text-orange-400 transition">Agenda</a>
+            <a href="../../update.php" class="block py-2 font-semibold text-white hover:text-orange-400 transition">Claim DP</a>
+        </nav>
+    </header>
     <div class="center-message">
         ✨ WELCOME TO INSPIRA 2025 ✨
     </div>
@@ -565,5 +601,49 @@ try {
             }
         });
     </script>
+    <script>
+        const navToggle = document.getElementById('nav-toggle');
+        const navMenuMobile = document.getElementById('nav-menu-mobile');
+        const hamburger = document.getElementById('hamburger');
+        const close = document.getElementById('close');
+
+        navToggle.addEventListener('click', () => {
+            navMenuMobile.classList.toggle('hidden');
+            hamburger.classList.toggle('hidden');
+            close.classList.toggle('hidden');
+        });
+    </script>
+    <footer class="site-footer">
+
+  <div class="container mx-auto px-6 text-center">
+    <h3 class="text-2xl font-bold mb-4 text-white">Contact Us</h3>
+    <p class="mb-2">Organizing Committee, INSPIRA'25</p>
+    <p class="mb-2">
+      Email:
+      <a href="mailto:info@inspira.com" class="hover:text-orange-400">
+        info@inspira2025.online
+      </a>
+    </p>
+    <p>
+      Phone:
+      <a href="tel:+94727688334" class="hover:text-orange-400">
+        +94 (72) 768-8334
+      </a>
+    </p>
+
+    <div class="mt-6 border-t border-gray-700 pt-6">
+      <p>&copy; inspira'25. All Rights Reserved.</p>
+      <p>
+        <small>
+          Developed By
+          <a href="developers.php" style="text-decoration: underline; color: yellow;">
+            Team INSPIRA
+          </a>
+        </small>
+      </p>
+    </div>
+  </div>
+
+    </footer>
 </body>
 </html>
