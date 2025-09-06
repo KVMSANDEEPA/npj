@@ -1,19 +1,34 @@
 <?php
-// Database connection
 $host = "localhost";
-$db   = "lamp";   
-$user = "root";   
-$pass = "";       
+$db   = "lamp";
+$user = "root";
+$pass = "";
+$message = "";
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
+    $pdo = new PDO("mysql:host=$host;charset=utf8", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Fetch all lamps
-    $lamps = $pdo->query("SELECT * FROM lamps ORDER BY lamp_number")->fetchAll(PDO::FETCH_ASSOC);
+    // Check if the database exists
+    $stmt = $pdo->query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$db'");
+    if ($stmt->rowCount() == 0) {
+        // Database does not exist, create it
+        $pdo->exec("CREATE DATABASE `$db`");
+        $message .= "Database '$db' created successfully.<br>";
+    }
+
+    // Connect to the new database
+    $pdo->exec("USE `$db`");
+
+    // Handle database setup
+    if (isset($_POST['setup_database'])) {
+        $sql = file_get_contents('lamp.sql');
+        $pdo->exec($sql);
+        $message .= "Database tables created and populated successfully!";
+    }
 
 } catch (PDOException $e) {
-    die("DB connection failed: " . $e->getMessage());
+    die("DB setup failed: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -354,6 +369,38 @@ try {
         .lamp-card:active {
             transform: translateY(-2px) scale(0.95);
         }
+
+        .setup-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 200;
+        }
+
+        .setup-button {
+            background: #f4d03f;
+            color: #2c1810;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Georgia', serif;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(244, 208, 63, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .setup-button:hover {
+            background: #fff;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+        }
+
+        .message-box {
+            color: #f4d03f;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -369,12 +416,31 @@ try {
         </div>
     </div>
 
+    <div class="setup-container">
+        <form method="POST">
+            <button type="submit" name="setup_database" class="setup-button">Setup/Reset Database</button>
+        </form>
+        <?php if (!empty($message)): ?>
+            <div class="message-box"><?php echo $message; ?></div>
+        <?php endif; ?>
+    </div>
+
     <script>
         // Function to create a single lamp
-        function createLamp(lampNumber, isInner = false) {
+        function createLamp(lamp, isInner = false) {
             const lampCard = document.createElement('div');
-            const className = isInner ? `lamp-card inner-lamp-${lampNumber}` : `lamp-card lamp-${lampNumber}`;
+            const lampNumber = lamp.lamp_number;
+            const className = isInner
+                ? `lamp-card inner-lamp-${lampNumber - 20}`
+                : `lamp-card lamp-${lampNumber}`;
+
             lampCard.className = className;
+            lampCard.dataset.lampId = lampNumber; // Store lamp number in a data attribute
+
+            if (parseInt(lamp.is_lit)) {
+                lampCard.classList.add('lit');
+            }
+
             lampCard.onclick = () => toggleLamp(lampCard);
             
             lampCard.innerHTML = `
@@ -396,17 +462,32 @@ try {
         }
 
         // Function to toggle lamp state
-        function toggleLamp(lampElement) {
-            lampElement.classList.toggle('lit');
-            
-            // Add a subtle click animation
-            lampElement.style.transform = lampElement.style.transform.includes('scale') 
-                ? lampElement.style.transform.replace(/scale\([^)]*\)/, 'scale(0.95)')
-                : lampElement.style.transform + ' scale(0.95)';
-            
-            setTimeout(() => {
-                lampElement.style.transform = lampElement.style.transform.replace(/\s*scale\([^)]*\)/, '');
-            }, 150);
+        async function toggleLamp(lampElement) {
+            const lampId = lampElement.dataset.lampId;
+            if (!lampId) return;
+
+            try {
+                const response = await fetch(`lampupdate.php?id=${lampId}`);
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    // Toggle visual state only after successful update
+                    lampElement.classList.toggle('lit');
+
+                    // Add a subtle click animation
+                    lampElement.style.transform = lampElement.style.transform.includes('scale')
+                        ? lampElement.style.transform.replace(/scale\([^)]*\)/, 'scale(0.95)')
+                        : lampElement.style.transform + ' scale(0.95)';
+
+                    setTimeout(() => {
+                        lampElement.style.transform = lampElement.style.transform.replace(/\s*scale\([^)]*\)/, '');
+                    }, 150);
+                } else {
+                    console.error('Failed to update lamp state:', result.message);
+                }
+            } catch (error) {
+                console.error('Error updating lamp state:', error);
+            }
         }
 
         // Function to position lamps in a circle with gaps
@@ -420,27 +501,27 @@ try {
         }
 
         // Generate outer ring (20 lamps)
-        function generateOuterLamps() {
+        function generateOuterLamps(lamps) {
             const lampsRing = document.getElementById('lampsRing');
             const radius = window.innerWidth <= 480 ? 140 : window.innerWidth <= 768 ? 180 : 280;
             
-            for (let i = 1; i <= 20; i++) {
-                const lamp = createLamp(i, false);
+            lamps.forEach((lampData, index) => {
+                const lamp = createLamp(lampData, false);
                 lampsRing.appendChild(lamp);
-                positionLampInCircle(lamp, i - 1, 20, radius);
-            }
+                positionLampInCircle(lamp, index, 20, radius);
+            });
         }
 
         // Generate inner ring (5 lamps)
-        function generateInnerLamps() {
+        function generateInnerLamps(lamps) {
             const innerLampsRing = document.getElementById('innerLampsRing');
             const radius = window.innerWidth <= 480 ? 50 : window.innerWidth <= 768 ? 65 : 85;
             
-            for (let i = 1; i <= 5; i++) {
-                const lamp = createLamp(i, true);
+            lamps.forEach((lampData, index) => {
+                const lamp = createLamp(lampData, true);
                 innerLampsRing.appendChild(lamp);
-                positionLampInCircle(lamp, i - 1, 5, radius);
-            }
+                positionLampInCircle(lamp, index, 5, radius);
+            });
         }
 
         // Reposition lamps on window resize
@@ -462,11 +543,25 @@ try {
             });
         }
 
+        // Fetch lamp states from the server
+        async function fetchLampStates() {
+            try {
+                const response = await fetch('fetch.php');
+                const lamps = await response.json();
+                if (lamps.error) {
+                    console.error('Error fetching lamp states:', lamps.error);
+                    return;
+                }
+                // Once we have the states, generate the lamps
+                generateOuterLamps(lamps.slice(0, 20));
+                generateInnerLamps(lamps.slice(20, 25));
+            } catch (error) {
+                console.error('Failed to fetch lamp states:', error);
+            }
+        }
+
         // Initialize the lamps when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            generateOuterLamps();
-            generateInnerLamps();
-        });
+        document.addEventListener('DOMContentLoaded', fetchLampStates);
 
         // Reposition on window resize
         window.addEventListener('resize', repositionLamps);
